@@ -1,66 +1,82 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
-import Navbar from '../../components/Navbar';
-import FeatureErrorBoundary from '../../components/FeatureErrorBoundary';
-import { Container, Heading, Text, Flex, Card, TextField, Button, Box, Grid } from '@radix-ui/themes';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../contexts/AuthContext";
+import Navbar from "../../components/Navbar";
+import FeatureErrorBoundary from "../../components/FeatureErrorBoundary";
+import {
+  Container,
+  Heading,
+  Text,
+  Flex,
+  Card,
+  TextField,
+  Button,
+  Box,
+  Grid,
+} from "@radix-ui/themes";
+import { updateUser } from "@/services/userService";
 
 export default function Profile() {
   const { user } = useAuth();
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    address: '',
-    phone: ''
+    email: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    phone: "",
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Load user data when component mounts
   useEffect(() => {
     if (user) {
       setFormData({
-        email: user.email || '',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        address: user.address || '',
-        phone: user.phone || ''
+        email: user.email || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        address: user.address || "",
+        phone: user.phone || "",
       });
     } else {
       // Redirect to login if not authenticated
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [user, router]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: value
+      [id]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setIsLoading(true);
 
     try {
-      // Call API to update user profile
-      // This would typically be a service call like updateUserProfile(formData)
-      // For now, we'll just simulate a successful update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create FormData for file upload
+      const userData = { ...formData };
+      console.log(user.id);
 
-      setSuccess('Profile updated successfully');
+      // Call API to create pet
+      await updateUser(user.id, userData);
+
+      // Redirect to the new pet's page
+      router.push("/dashboard");
+      setSuccess("Profile updated successfully");
     } catch (err) {
-      console.error('Profile update error:', err);
-      setError('Failed to update profile. Please try again.');
+      console.error("Profile update error:", err);
+      setError("Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +88,9 @@ export default function Profile() {
       <Container size="2" py="9">
         <Card>
           <Flex direction="column" gap="5" p="4">
-            <Heading size="6" align="center">My Profile</Heading>
+            <Heading size="6" align="center">
+              My Profile
+            </Heading>
 
             {error && (
               <Text color="red" size="2">
@@ -159,9 +177,13 @@ export default function Profile() {
 
                 <Flex gap="3" mt="4">
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? 'Updating...' : 'Update Profile'}
+                    {isLoading ? "Updating..." : "Update Profile"}
                   </Button>
-                  <Button type="button" variant="soft" onClick={() => router.push('/change-password')}>
+                  <Button
+                    type="button"
+                    variant="soft"
+                    onClick={() => router.push("/change-password")}
+                  >
                     Change Password
                   </Button>
                 </Flex>
