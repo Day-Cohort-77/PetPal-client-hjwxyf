@@ -150,7 +150,7 @@ export default function Dashboard() {
                           </Flex>
 
                           {pets.length === 0 ? (
-                            <Text>You don't have any pets yet. Add your first pet to get started.</Text>
+                            <Text>You do not have any pets yet. Add your first pet to get started.</Text>
                           ) : (
                             <Flex direction="column" gap="3">
                               {pets.map((pet) => (
