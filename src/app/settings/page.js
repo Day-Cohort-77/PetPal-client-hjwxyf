@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../../components/Navbar';
+import { useTheme } from '../../contexts/ThemeContext';
 import FeatureErrorBoundary from '../../components/FeatureErrorBoundary';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { Container, Heading, Text, Flex, Card, Button, Box, Tabs, Switch, RadioGroup, Separator } from '@radix-ui/themes';
+
 
 export default function Settings() {
   const { user } = useAuth();
@@ -15,6 +17,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const { themeSettings, updateTheme, saveThemeToServer } = useTheme(); 
 
   // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
@@ -28,12 +31,7 @@ export default function Settings() {
     reminderLeadTime: '1_day',
   });
 
-  // Theme settings
-  const [themeSettings, setThemeSettings] = useState({
-    theme: 'light',
-    accentColor: 'blue',
-    fontSize: 'medium',
-  });
+
 
   // Check if user is authenticated
   useEffect(() => {
@@ -60,12 +58,12 @@ export default function Settings() {
     }));
   };
 
-  const handleThemeChange = (id, value) => {
-    setThemeSettings(prev => ({
-      ...prev,
-      [id]: value
-    }));
+ const handleThemeChange = (id, value) => {
+    updateTheme(id, value);
   };
+
+
+
 
   const handleSaveNotifications = async () => {
     setError('');
@@ -83,28 +81,28 @@ export default function Settings() {
       setIsSaving(false);
     }
   };
-
   const handleSaveTheme = async () => {
     setError('');
     setSuccess('');
     setIsSaving(true);
 
     try {
-      // In a real app, this would be an API call to save theme settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const result = await saveThemeToServer(); 
+  
       setSuccess('Theme settings saved successfully');
-
-      // Apply theme changes
-      // This would typically update the theme context or localStorage
-      // For now, we'll just log the changes
-      console.log('Theme settings updated:', themeSettings);
     } catch (err) {
-      console.error('Error saving theme settings:', err);
-      setError('Failed to save theme settings. Please try again.');
+      console.error('Save failed:', err);
+      setError('Failed to save theme settings: ' + err.message);
     } finally {
       setIsSaving(false);
     }
   };
+
+
+ 
+
+  
 
   const settingsContent = (
     <>
