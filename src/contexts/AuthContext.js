@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     console.log('Logging out user');
     setUser(null);
+    localStorage.removeItem('petpal-theme-settings');
     // The cookie will be removed by the server
   };
 

@@ -40,3 +40,58 @@ a {
     color-scheme: dark;
   }
 }
+/* ...existing code... */
+
+/* Theme Control - Override system preferences when user selects manually */
+
+/* Light Theme */
+[data-theme="light"] {
+  --background: #ffffff !important;
+  --foreground: #171717!important;
+}
+
+[data-theme="light"] body {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --background: #0a0a0a !important;
+  --foreground: #ededed !important;
+}
+
+[data-theme="dark"] body {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Font Size Controls */
+[data-font-size="small"] {
+  font-size: 14px;
+}
+
+[data-font-size="medium"] {
+  font-size: 16px;
+}
+
+[data-font-size="large"] {
+  font-size: 18px;
+}
+
+/* Accent Color Controls (for future use) */
+[data-accent-color="blue"] {
+  --accent: #3b82f6;
+}
+
+[data-accent-color="green"] {
+  --accent: #10b981;
+}
+
+[data-accent-color="purple"] {
+  --accent: #8b5cf6;
+}
+
+[data-accent-color="orange"] {
+  --accent: #f97316;
+}
