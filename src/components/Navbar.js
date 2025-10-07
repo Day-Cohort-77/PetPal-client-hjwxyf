@@ -53,6 +53,9 @@ const Navbar = () => {
             <Link href="/care-providers" passHref>
               <Text style={{ cursor: 'pointer' }}>Care Providers</Text>
             </Link>
+            <Link href="/emergency-services" passHref>
+              <Text style={{ cursor: 'pointer' }}>EmergencyServices</Text>
+            </Link>
           </Flex>
         )}
       </Flex>
