@@ -1,14 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '../../../../../contexts/AuthContext';
-import { getPetById } from '../../../../../services/petService';
-import { createHealthRecord } from '../../../../../services/healthRecordService';
-import ProtectedRoute from '../../components/ProtectedRoute';
-import Navbar from '../../../../../components/Navbar';
-import FeatureErrorBoundary from '../../../../../components/FeatureErrorBoundary';
-import { Container, Heading, Text, Flex, Card, TextField, Button, Box, Grid, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { getPetById } from "../../../../../services/petService";
+import { createMedication } from "../../../../../services/medicationService";
+import ProtectedRoute from "../../../../../components/ProtectedRoute";
+import Navbar from "../../../../../components/Navbar";
+import FeatureErrorBoundary from "../../../../../components/FeatureErrorBoundary";
+import {
+  Container,
+  Heading,
+  Text,
+  Flex,
+  Card,
+  TextField,
+  Button,
+  Box,
+  Grid,
+  Select,
+  TextArea,
+  Checkbox,
+} from "@radix-ui/themes";
 
 export default function AddMedication() {
   const { user } = useAuth();
@@ -18,47 +31,22 @@ export default function AddMedication() {
 
   const [pet, setPet] = useState(null);
   const [formData, setFormData] = useState({
-    medicationName: '',
-    dosage: '',
-    dosageUnit: 'mg',
-    frequency: '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    prescribedBy: '',
-    reason: '',
-    instructions: '',
-    isOngoing: false,
-    reminders: true,
-    reminderTimes: ['08:00'],
-    notes: ''
+    name: "",
+    dosage: "",
+    frequency: "",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: "",
+    instructions: "",
+    prescribedBy: {
+      id: "",
+      name: "",
+    },
+    status: "active",
+    reminderEnabled: true,
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Common dosage units for selection
-  const dosageUnits = [
-    { value: 'mg', label: 'mg (milligram)' },
-    { value: 'ml', label: 'ml (milliliter)' },
-    { value: 'g', label: 'g (gram)' },
-    { value: 'tablet', label: 'tablet' },
-    { value: 'capsule', label: 'capsule' },
-    { value: 'drop', label: 'drop' },
-    { value: 'puff', label: 'puff' },
-    { value: 'unit', label: 'unit' }
-  ];
-
-  // Common frequency options
-  const frequencyOptions = [
-    { value: 'once_daily', label: 'Once daily' },
-    { value: 'twice_daily', label: 'Twice daily' },
-    { value: 'three_times_daily', label: 'Three times daily' },
-    { value: 'four_times_daily', label: 'Four times daily' },
-    { value: 'every_other_day', label: 'Every other day' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'as_needed', label: 'As needed (PRN)' },
-    { value: 'custom', label: 'Custom' }
-  ];
 
   // Check if user is authenticated and fetch pet data
   useEffect(() => {
@@ -67,8 +55,8 @@ export default function AddMedication() {
         const petData = await getPetById(petId);
         setPet(petData);
       } catch (err) {
-        console.error('Error fetching pet details:', err);
-        setError('Failed to load pet details. Please try again.');
+        console.error("Error fetching pet details:", err);
+        setError("Failed to load pet details. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -81,67 +69,63 @@ export default function AddMedication() {
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : value
+      [id]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleNestedChange = (parent, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [parent]: {
+        ...prev[parent],
+        [field]: value,
+      },
     }));
   };
 
   const handleSelectChange = (id, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: value
-    }));
-  };
-
-  const handleReminderTimeChange = (index, value) => {
-    const newReminderTimes = [...formData.reminderTimes];
-    newReminderTimes[index] = value;
-    setFormData(prev => ({
-      ...prev,
-      reminderTimes: newReminderTimes
-    }));
-  };
-
-  const addReminderTime = () => {
-    setFormData(prev => ({
-      ...prev,
-      reminderTimes: [...prev.reminderTimes, '12:00']
-    }));
-  };
-
-  const removeReminderTime = (index) => {
-    const newReminderTimes = formData.reminderTimes.filter((_, i) => i !== index);
-    setFormData(prev => ({
-      ...prev,
-      reminderTimes: newReminderTimes
+      [id]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsSaving(true);
 
     try {
-      // Prepare medication data
+      // Prepare medication data to match the backend DTO
       const medicationData = {
-        ...formData,
         petId,
-        recordType: 'MEDICATION',
-        // Convert dates to ISO format
+        name: formData.name,
+        dosage: formData.dosage,
+        frequency: formData.frequency,
         startDate: new Date(formData.startDate).toISOString(),
-        endDate: formData.isOngoing ? null : (formData.endDate ? new Date(formData.endDate).toISOString() : null)
+        endDate: formData.endDate
+          ? new Date(formData.endDate).toISOString()
+          : null,
+        instructions: formData.instructions,
+        prescribedBy: {
+          id: formData.prescribedBy.id,
+          name: formData.prescribedBy.name,
+        },
+        status: formData.status,
+        reminderEnabled: formData.reminderEnabled,
+        notes: formData.notes || "",
       };
 
-      // Call API to create health record
-      const newRecord = await createHealthRecord(medicationData);
+      // Call API to create medication
+      const newRecord = await createMedication(medicationData);
 
       // Redirect back to pet details page
       router.push(`/pets/${petId}?tab=medications`);
     } catch (err) {
-      console.error('Error adding medication:', err);
-      setError('Failed to add medication. Please try again.');
+      console.error("Error adding medication:", err);
+      setError("Failed to add medication. Please try again.");
       setIsSaving(false);
     }
   };
@@ -152,7 +136,9 @@ export default function AddMedication() {
       <Container size="2" py="9">
         <Card>
           <Flex direction="column" gap="5" p="4">
-            <Heading size="6" align="center">Add Medication for {pet?.name || 'Pet'}</Heading>
+            <Heading size="6" align="center">
+              Add Medication for {pet?.name || "Pet"}
+            </Heading>
 
             {error && (
               <Text color="red" size="2">
@@ -166,84 +152,43 @@ export default function AddMedication() {
               <form onSubmit={handleSubmit}>
                 <Flex direction="column" gap="4">
                   <Box>
-                    <Text as="label" size="2" mb="1" htmlFor="medicationName">
+                    <Text as="label" size="2" mb="1" htmlFor="name">
                       Medication Name*
                     </Text>
                     <TextField.Root
-                      id="medicationName"
-                      value={formData.medicationName}
+                      id="name"
+                      value={formData.name}
                       onChange={handleChange}
                       placeholder="Enter medication name"
                       required
                     />
                   </Box>
 
-                  <Grid columns="2" gap="4">
-                    <Box>
-                      <Text as="label" size="2" mb="1" htmlFor="dosage">
-                        Dosage*
-                      </Text>
-                      <TextField.Root
-                        id="dosage"
-                        value={formData.dosage}
-                        onChange={handleChange}
-                        placeholder="Enter dosage amount"
-                        required
-                      />
-                    </Box>
-
-                    <Box>
-                      <Text as="label" size="2" mb="1" htmlFor="dosageUnit">
-                        Unit
-                      </Text>
-                      <Select.Root
-                        value={formData.dosageUnit}
-                        onValueChange={(value) => handleSelectChange('dosageUnit', value)}
-                      >
-                        <Select.Trigger id="dosageUnit" />
-                        <Select.Content>
-                          {dosageUnits.map(unit => (
-                            <Select.Item key={unit.value} value={unit.value}>
-                              {unit.label}
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Root>
-                    </Box>
-                  </Grid>
+                  <Box>
+                    <Text as="label" size="2" mb="1" htmlFor="dosage">
+                      Dosage* (include unit, e.g., &quot;50mg&quot;)
+                    </Text>
+                    <TextField.Root
+                      id="dosage"
+                      value={formData.dosage}
+                      onChange={handleChange}
+                      placeholder="Enter dosage with unit (e.g., 50mg, 2 tablets)"
+                      required
+                    />
+                  </Box>
 
                   <Box>
                     <Text as="label" size="2" mb="1" htmlFor="frequency">
                       Frequency*
                     </Text>
-                    <Select.Root
+                    <TextField.Root
+                      id="frequency"
                       value={formData.frequency}
-                      onValueChange={(value) => handleSelectChange('frequency', value)}
-                    >
-                      <Select.Trigger id="frequency" placeholder="Select frequency" />
-                      <Select.Content>
-                        {frequencyOptions.map(option => (
-                          <Select.Item key={option.value} value={option.value}>
-                            {option.label}
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Root>
+                      onChange={handleChange}
+                      placeholder="e.g., Twice daily, Once daily, Every 8 hours"
+                      required
+                    />
                   </Box>
-
-                  {formData.frequency === 'custom' && (
-                    <Box>
-                      <Text as="label" size="2" mb="1" htmlFor="customFrequency">
-                        Custom Frequency
-                      </Text>
-                      <TextField.Root
-                        id="customFrequency"
-                        value={formData.customFrequency || ''}
-                        onChange={handleChange}
-                        placeholder="Describe custom frequency (e.g., every 8 hours)"
-                      />
-                    </Box>
-                  )}
 
                   <Grid columns="2" gap="4">
                     <Box>
@@ -260,58 +205,68 @@ export default function AddMedication() {
                     </Box>
 
                     <Box>
-                      <Flex direction="column" gap="1">
-                        <Flex align="center" gap="2">
-                          <input
-                            type="checkbox"
-                            id="isOngoing"
-                            checked={formData.isOngoing}
-                            onChange={handleChange}
-                          />
-                          <Text as="label" size="2" htmlFor="isOngoing">
-                            Ongoing Medication
-                          </Text>
-                        </Flex>
-
-                        {!formData.isOngoing && (
-                          <>
-                            <Text as="label" size="2" mb="1" htmlFor="endDate">
-                              End Date
-                            </Text>
-                            <TextField.Root
-                              id="endDate"
-                              type="date"
-                              value={formData.endDate}
-                              onChange={handleChange}
-                            />
-                          </>
-                        )}
-                      </Flex>
+                      <Text as="label" size="2" mb="1" htmlFor="endDate">
+                        End Date
+                      </Text>
+                      <TextField.Root
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                      />
                     </Box>
                   </Grid>
 
                   <Box>
-                    <Text as="label" size="2" mb="1" htmlFor="prescribedBy">
+                    <Text as="label" size="2" mb="1">
                       Prescribed By
                     </Text>
-                    <TextField.Root
-                      id="prescribedBy"
-                      value={formData.prescribedBy}
-                      onChange={handleChange}
-                      placeholder="Enter name of prescriber"
-                    />
-                  </Box>
-
-                  <Box>
-                    <Text as="label" size="2" mb="1" htmlFor="reason">
-                      Reason for Medication
-                    </Text>
-                    <TextField.Root
-                      id="reason"
-                      value={formData.reason}
-                      onChange={handleChange}
-                      placeholder="Enter reason for medication"
-                    />
+                    <Grid columns="2" gap="4">
+                      <Box>
+                        <Text as="label" size="1" mb="1" htmlFor="prescriberId">
+                          Prescriber ID
+                        </Text>
+                        <TextField.Root
+                          id="prescriberId"
+                          value={formData.prescribedBy.id}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              prescribedBy: {
+                                ...prev.prescribedBy,
+                                id: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="e.g., vet456"
+                        />
+                      </Box>
+                      <Box>
+                        <Text
+                          as="label"
+                          size="1"
+                          mb="1"
+                          htmlFor="prescriberName"
+                        >
+                          Prescriber Name
+                        </Text>
+                        <TextField.Root
+                          id="prescriberName"
+                          value={formData.prescribedBy.name}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              prescribedBy: {
+                                ...prev.prescribedBy,
+                                name: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Enter prescriber name"
+                          required
+                        />
+                      </Box>
+                    </Grid>
                   </Box>
 
                   <Box>
@@ -322,57 +277,22 @@ export default function AddMedication() {
                       id="instructions"
                       value={formData.instructions}
                       onChange={handleChange}
-                      placeholder="Enter instructions for administering medication"
+                      placeholder="Give with food"
                     />
                   </Box>
 
                   <Box>
-                    <Flex align="center" gap="2" mb="2">
+                    <Flex align="center" gap="2">
                       <input
                         type="checkbox"
-                        id="reminders"
-                        checked={formData.reminders}
+                        id="reminderEnabled"
+                        checked={formData.reminderEnabled}
                         onChange={handleChange}
                       />
-                      <Text as="label" size="2" htmlFor="reminders">
-                        Set Reminders
+                      <Text as="label" size="2" htmlFor="reminderEnabled">
+                        Enable Reminders
                       </Text>
                     </Flex>
-
-                    {formData.reminders && (
-                      <Box>
-                        <Text size="2" mb="2">Reminder Times:</Text>
-                        {formData.reminderTimes.map((time, index) => (
-                          <Flex key={index} gap="2" mb="2" align="center">
-                            <TextField.Root
-                              type="time"
-                              value={time}
-                              onChange={(e) => handleReminderTimeChange(index, e.target.value)}
-                              style={{ flexGrow: 1 }}
-                            />
-                            {formData.reminderTimes.length > 1 && (
-                              <Button
-                                type="button"
-                                size="1"
-                                variant="soft"
-                                color="red"
-                                onClick={() => removeReminderTime(index)}
-                              >
-                                Remove
-                              </Button>
-                            )}
-                          </Flex>
-                        ))}
-                        <Button
-                          type="button"
-                          size="1"
-                          variant="soft"
-                          onClick={addReminderTime}
-                        >
-                          Add Reminder Time
-                        </Button>
-                      </Box>
-                    )}
                   </Box>
 
                   <Box>
@@ -389,7 +309,7 @@ export default function AddMedication() {
 
                   <Flex gap="3" mt="4">
                     <Button type="submit" disabled={isSaving}>
-                      {isSaving ? 'Saving...' : 'Save Medication'}
+                      {isSaving ? "Saving..." : "Save Medication"}
                     </Button>
                     <Button
                       type="button"

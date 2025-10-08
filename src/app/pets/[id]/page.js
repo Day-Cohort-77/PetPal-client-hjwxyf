@@ -1,15 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '../../../contexts/AuthContext';
-import { getPetById, updatePet, deletePet } from '../../../services/petService';
-import { getPetAppointments } from '../../../services/appointmentService';
-import Navbar from '../../../components/Navbar';
-import FeatureErrorBoundary from '../../../components/FeatureErrorBoundary';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import { Container, Grid, Badge, Heading, Text, Flex, Card, Button, Box, Tabs, Avatar, Dialog, IconButton } from '@radix-ui/themes';
-import { FiEdit2, FiTrash2, FiCalendar } from 'react-icons/fi';
+import { useState, useEffect } from "react"; // Fetch pet medications
+
+import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "../../../contexts/AuthContext";
+import { getPetById, updatePet, deletePet } from "../../../services/petService";
+import { getPetAppointments } from "../../../services/appointmentService";
+import { getMedications } from "../../../services/medicationService";
+import Navbar from "../../../components/Navbar";
+import FeatureErrorBoundary from "../../../components/FeatureErrorBoundary";
+import ProtectedRoute from "../../../components/ProtectedRoute";
+import {
+  Container,
+  Grid,
+  Badge,
+  Heading,
+  Text,
+  Flex,
+  Card,
+  Button,
+  Box,
+  Tabs,
+  Avatar,
+  Dialog,
+  IconButton,
+} from "@radix-ui/themes";
+import { FiEdit2, FiTrash2, FiCalendar } from "react-icons/fi";
 
 export default function PetDetails() {
   const { user } = useAuth();
@@ -19,8 +35,9 @@ export default function PetDetails() {
 
   const [pet, setPet] = useState(null);
   const [petAppointments, setPetAppointments] = useState([]);
+  const [petMedications, setPetMedications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -34,9 +51,13 @@ export default function PetDetails() {
         // Fetch pet appointments
         const appointmentsData = await getPetAppointments(petId);
         setPetAppointments(appointmentsData || []);
+
+        // Fetch pet medications
+        const medicationsData = await getMedications(petId);
+        setPetMedications(medicationsData || []);
       } catch (err) {
-        console.error('Error fetching pet data:', err);
-        setError('Failed to load pet data. Please try again.');
+        console.error("Error fetching pet data:", err);
+        setError("Failed to load pet data. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -54,10 +75,10 @@ export default function PetDetails() {
   const handleDelete = async () => {
     try {
       await deletePet(petId);
-      router.push('/pets');
+      router.push("/pets");
     } catch (err) {
-      console.error('Error deleting pet:', err);
-      setError('Failed to delete pet. Please try again.');
+      console.error("Error deleting pet:", err);
+      setError("Failed to delete pet. Please try again.");
       setIsDeleteDialogOpen(false);
     }
   };
@@ -65,30 +86,30 @@ export default function PetDetails() {
   // Get status badge color for appointments
   const getStatusBadgeColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'scheduled':
-        return 'blue';
-      case 'completed':
-        return 'green';
-      case 'cancelled':
-        return 'red';
-      case 'pending':
-        return 'yellow';
+      case "scheduled":
+        return "blue";
+      case "completed":
+        return "green";
+      case "cancelled":
+        return "red";
+      case "pending":
+        return "yellow";
       default:
-        return 'gray';
+        return "gray";
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
+    if (!dateString) return "Unknown";
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+    return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleDateString();
   };
 
   const calculateAge = (birthDate) => {
-    if (!birthDate) return 'Unknown';
+    if (!birthDate) return "Unknown";
 
     const birth = new Date(birthDate);
-    if (isNaN(birth.getTime())) return 'Unknown';
+    if (isNaN(birth.getTime())) return "Unknown";
 
     const now = new Date();
     let years = now.getFullYear() - birth.getFullYear();
@@ -98,7 +119,7 @@ export default function PetDetails() {
       years--;
     }
 
-    return years === 1 ? '1 year' : `${years} years`;
+    return years === 1 ? "1 year" : `${years} years`;
   };
 
   const petDetailsContent = (
@@ -111,7 +132,7 @@ export default function PetDetails() {
           <Card>
             <Flex direction="column" align="center" gap="4" p="6">
               <Text color="red">{error}</Text>
-              <Button onClick={() => router.push('/pets')}>Back to Pets</Button>
+              <Button onClick={() => router.push("/pets")}>Back to Pets</Button>
             </Flex>
           </Card>
         ) : pet ? (
@@ -127,7 +148,9 @@ export default function PetDetails() {
                   />
                   <Box>
                     <Heading size="6">{pet.name}</Heading>
-                    <Text size="2" color="gray">{pet.species} • {pet.breed}</Text>
+                    <Text size="2" color="gray">
+                      {pet.species} • {pet.breed}
+                    </Text>
                   </Box>
                 </Flex>
                 <Flex gap="2">
@@ -164,18 +187,45 @@ export default function PetDetails() {
 
                       <Grid columns="2" gap="4">
                         <InfoItem label="Species" value={pet.species} />
-                        <InfoItem label="Breed" value={pet.breed || 'Not specified'} />
-                        <InfoItem label="Birth Date" value={formatDate(pet.birthDate)} />
-                        <InfoItem label="Age" value={calculateAge(pet.birthDate)} />
-                        <InfoItem label="Gender" value={pet.gender || 'Not specified'} />
-                        <InfoItem label="Color" value={pet.color || 'Not specified'} />
-                        <InfoItem label="Weight" value={pet.weight ? `${pet.weight} ${pet.weightUnit || 'lbs'}` : 'Not specified'} />
-                        <InfoItem label="Microchip" value={pet.microchipNumber || 'Not specified'} />
+                        <InfoItem
+                          label="Breed"
+                          value={pet.breed || "Not specified"}
+                        />
+                        <InfoItem
+                          label="Birth Date"
+                          value={formatDate(pet.birthDate)}
+                        />
+                        <InfoItem
+                          label="Age"
+                          value={calculateAge(pet.birthDate)}
+                        />
+                        <InfoItem
+                          label="Gender"
+                          value={pet.gender || "Not specified"}
+                        />
+                        <InfoItem
+                          label="Color"
+                          value={pet.color || "Not specified"}
+                        />
+                        <InfoItem
+                          label="Weight"
+                          value={
+                            pet.weight
+                              ? `${pet.weight} ${pet.weightUnit || "lbs"}`
+                              : "Not specified"
+                          }
+                        />
+                        <InfoItem
+                          label="Microchip"
+                          value={pet.microchipNumber || "Not specified"}
+                        />
                       </Grid>
 
                       {pet.notes && (
                         <Box mt="2">
-                          <Text size="2" weight="bold">Notes:</Text>
+                          <Text size="2" weight="bold">
+                            Notes:
+                          </Text>
                           <Text size="2">{pet.notes}</Text>
                         </Box>
                       )}
@@ -188,43 +238,71 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Appointments</Heading>
-                        <Button size="2" onClick={() => router.push(`/appointments/add?petId=${petId}`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/appointments/add?petId=${petId}`)
+                          }
+                        >
                           Schedule Appointment
                         </Button>
                       </Flex>
 
                       {petAppointments.length === 0 ? (
-                        <Text>No appointments found. Schedule an appointment to get started.</Text>
+                        <Text>
+                          No appointments found. Schedule an appointment to get
+                          started.
+                        </Text>
                       ) : (
                         <Flex direction="column" gap="3">
                           {petAppointments.map((appointment) => (
                             <Card key={appointment.id}>
                               <Flex gap="3" p="2">
-                                <Box style={{ color: 'var(--accent-9)', fontSize: '1.5rem' }}>
+                                <Box
+                                  style={{
+                                    color: "var(--accent-9)",
+                                    fontSize: "1.5rem",
+                                  }}
+                                >
                                   <FiCalendar />
                                 </Box>
                                 <Box style={{ flex: 1 }}>
                                   <Flex justify="between" align="start">
                                     <Box>
-                                      <Text size="2" weight="bold">{appointment.reason}</Text>
+                                      <Text size="2" weight="bold">
+                                        {appointment.reason}
+                                      </Text>
                                       <Text size="1" color="gray">
-                                        {formatDate(appointment.date)} • {appointment.time}
+                                        {formatDate(appointment.date)} •{" "}
+                                        {appointment.time}
                                       </Text>
                                       {appointment.veterinarianName && (
-                                        <Text size="1">Dr. {appointment.veterinarianName}</Text>
+                                        <Text size="1">
+                                          Dr. {appointment.veterinarianName}
+                                        </Text>
                                       )}
                                       {appointment.location && (
-                                        <Text size="1">{appointment.location}</Text>
+                                        <Text size="1">
+                                          {appointment.location}
+                                        </Text>
                                       )}
                                     </Box>
                                     <Flex direction="column" align="end">
-                                      <Badge color={getStatusBadgeColor(appointment.status)}>
-                                        {appointment.status || 'Scheduled'}
+                                      <Badge
+                                        color={getStatusBadgeColor(
+                                          appointment.status
+                                        )}
+                                      >
+                                        {appointment.status || "Scheduled"}
                                       </Badge>
                                       <Button
                                         size="1"
                                         variant="ghost"
-                                        onClick={() => router.push(`/appointments/${appointment.id}`)}
+                                        onClick={() =>
+                                          router.push(
+                                            `/appointments/${appointment.id}`
+                                          )
+                                        }
                                       >
                                         View
                                       </Button>
@@ -245,13 +323,20 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Health Records</Heading>
-                        <Button size="2" onClick={() => router.push(`/pets/${petId}/health-records/add`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/pets/${petId}/health-records/add`)
+                          }
+                        >
                           Add Vet Visit
                         </Button>
                       </Flex>
 
                       {/* Placeholder for health records list */}
-                      <Text>No health records found. Add a vet visit to get started.</Text>
+                      <Text>
+                        No health records found. Add a vet visit to get started.
+                      </Text>
                     </Flex>
                   </Card>
                 </Tabs.Content>
@@ -261,13 +346,20 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Vaccinations</Heading>
-                        <Button size="2" onClick={() => router.push(`/pets/${petId}/vaccinations/add`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/pets/${petId}/vaccinations/add`)
+                          }
+                        >
                           Add Vaccination
                         </Button>
                       </Flex>
 
                       {/* Placeholder for vaccinations list */}
-                      <Text>No vaccinations found. Add a vaccination to get started.</Text>
+                      <Text>
+                        No vaccinations found. Add a vaccination to get started.
+                      </Text>
                     </Flex>
                   </Card>
                 </Tabs.Content>
@@ -277,13 +369,88 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Medications</Heading>
-                        <Button size="2" onClick={() => router.push(`/pets/${petId}/medications/add`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/pets/${petId}/medications/add`)
+                          }
+                        >
                           Add Medication
                         </Button>
                       </Flex>
 
-                      {/* Placeholder for medications list */}
-                      <Text>No medications found. Add a medication to get started.</Text>
+                      {petMedications.length === 0 ? (
+                        <Text>
+                          No medications found. Add a medication to get started.
+                        </Text>
+                      ) : (
+                        <Flex direction="column" gap="3">
+                          {petMedications.map((medication) => (
+                            <Card key={medication.id}>
+                              <Flex gap="4" p="4">
+                                <Box style={{ flex: 1 }}>
+                                  <Flex justify="between" align="start">
+                                    <Box>
+                                      <Text size="3" weight="bold" mb="2">
+                                        {medication.name}
+                                      </Text>
+                                      <Flex direction="column" gap="1">
+                                        <Text size="2" color="gray">
+                                          {medication.dosage} •{" "}
+                                          {medication.frequency}
+                                        </Text>
+                                        <Text size="2">
+                                          {formatDate(medication.startDate)}
+                                          {medication.endDate &&
+                                            ` - ${formatDate(
+                                              medication.endDate
+                                            )}`}
+                                        </Text>
+                                        {medication.prescribedBy?.name && (
+                                          <Text size="2" color="indigo">
+                                            Prescribed by:{" "}
+                                            {medication.prescribedBy.name}
+                                          </Text>
+                                        )}
+                                        {medication.instructions && (
+                                          <Text size="2" color="gray" mt="1">
+                                            Instructions:{" "}
+                                            {medication.instructions}
+                                          </Text>
+                                        )}
+                                      </Flex>
+                                    </Box>
+                                    <Flex
+                                      direction="column"
+                                      align="end"
+                                      gap="2"
+                                    >
+                                      <Badge
+                                        color={
+                                          medication.status === "active"
+                                            ? "green"
+                                            : "gray"
+                                        }
+                                      >
+                                        {medication.status || "Active"}
+                                      </Badge>
+                                      {medication.reminderEnabled && (
+                                        <Badge
+                                          size="1"
+                                          variant="soft"
+                                          color="blue"
+                                        >
+                                          Reminder On
+                                        </Badge>
+                                      )}
+                                    </Flex>
+                                  </Flex>
+                                </Box>
+                              </Flex>
+                            </Card>
+                          ))}
+                        </Flex>
+                      )}
                     </Flex>
                   </Card>
                 </Tabs.Content>
@@ -293,13 +460,21 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Weight History</Heading>
-                        <Button size="2" onClick={() => router.push(`/pets/${petId}/weight/add`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/pets/${petId}/weight/add`)
+                          }
+                        >
                           Add Weight Record
                         </Button>
                       </Flex>
 
                       {/* Placeholder for weight history */}
-                      <Text>No weight records found. Add a weight record to get started.</Text>
+                      <Text>
+                        No weight records found. Add a weight record to get
+                        started.
+                      </Text>
                     </Flex>
                   </Card>
                 </Tabs.Content>
@@ -309,13 +484,21 @@ export default function PetDetails() {
                     <Flex direction="column" gap="4" p="4">
                       <Flex justify="between" align="center">
                         <Heading size="4">Feeding Schedule</Heading>
-                        <Button size="2" onClick={() => router.push(`/pets/${petId}/feeding/edit`)}>
+                        <Button
+                          size="2"
+                          onClick={() =>
+                            router.push(`/pets/${petId}/feeding/edit`)
+                          }
+                        >
                           Edit Feeding Schedule
                         </Button>
                       </Flex>
 
                       {/* Placeholder for feeding schedule */}
-                      <Text>No feeding schedule found. Create a feeding schedule to get started.</Text>
+                      <Text>
+                        No feeding schedule found. Create a feeding schedule to
+                        get started.
+                      </Text>
                     </Flex>
                   </Card>
                 </Tabs.Content>
@@ -326,18 +509,22 @@ export default function PetDetails() {
           <Card>
             <Flex direction="column" align="center" gap="4" p="6">
               <Text>Pet not found.</Text>
-              <Button onClick={() => router.push('/pets')}>Back to Pets</Button>
+              <Button onClick={() => router.push("/pets")}>Back to Pets</Button>
             </Flex>
           </Card>
         )}
       </Container>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog.Root open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Dialog.Root
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <Dialog.Content>
           <Dialog.Title>Delete Pet</Dialog.Title>
           <Dialog.Description size="2" mb="4">
-            Are you sure you want to delete {pet?.name}? This action cannot be undone.
+            Are you sure you want to delete {pet?.name}? This action cannot be
+            undone.
           </Dialog.Description>
 
           <Flex gap="3" mt="4" justify="end">
@@ -366,7 +553,9 @@ export default function PetDetails() {
 function InfoItem({ label, value }) {
   return (
     <Box>
-      <Text size="2" weight="bold">{label}:</Text>
+      <Text size="2" weight="bold">
+        {label}:
+      </Text>
       <Text size="2">{value}</Text>
     </Box>
   );
